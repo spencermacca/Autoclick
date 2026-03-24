@@ -9,6 +9,7 @@
     BOOL isClicking;
     BOOL isWaiting;
     BOOL fnPressed;
+    BOOL fnModifierActive; // tracks the actual fn modifier key state to detect key-down edge
     
     NSTimer* waitingTimer;
     NSInteger stationarySeconds;

@@ -132,7 +132,7 @@
         
         stationarySeconds = [[parameters objectForKey:@"stationary"] integerValue];
         
-        if ([NSEvent modifierFlags] & NSEventModifierFlagFunction)
+        if (fnPressed)
         {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self->statusLabel setStringValue:@"Paused…"];
@@ -233,7 +233,8 @@
 {
     self = [super init];
     if (self) {
-        fnPressed = [NSEvent modifierFlags] & NSEventModifierFlagFunction;
+        fnPressed = NO;
+        fnModifierActive = ([NSEvent modifierFlags] & NSEventModifierFlagFunction) != 0;
         isClicking = NO;
         isWaiting = NO;
         waitingTimer = nil;
@@ -260,24 +261,27 @@
             typeof(self) strongSelf = weakSelf;
             if (!strongSelf) { return (NSEvent *)nil; }
 //            if (DEBUG_ENABLED) NSLog(@"Flag Changed");
-            
-            if ([event modifierFlags] & NSEventModifierFlagFunction) {
-                strongSelf->fnPressed = YES;
-                
+
+            BOOL fnNowActive = ([event modifierFlags] & NSEventModifierFlagFunction) != 0;
+            BOOL fnKeyDown = fnNowActive && !strongSelf->fnModifierActive;
+            strongSelf->fnModifierActive = fnNowActive;
+
+            // Toggle pause only on fn key-down (flag newly added), ignore key-up.
+            if (fnKeyDown) {
+                strongSelf->fnPressed = !strongSelf->fnPressed;
+
                 if (strongSelf->isClicking && !strongSelf->isWaiting)
                 {
-                    [strongSelf->statusLabel setStringValue:@"Paused…"];
-                    [[NSApp appDelegate] pausedIcon];
-                }
-            }
-            else
-            {
-                strongSelf->fnPressed = NO;
-                
-                if (strongSelf->isClicking && !strongSelf->isWaiting)
-                {
-                    [strongSelf->statusLabel setStringValue:@"Clicking…"];
-                    [[NSApp appDelegate] clickingIcon];
+                    if (strongSelf->fnPressed)
+                    {
+                        [strongSelf->statusLabel setStringValue:@"Paused…"];
+                        [[NSApp appDelegate] pausedIcon];
+                    }
+                    else
+                    {
+                        [strongSelf->statusLabel setStringValue:@"Clicking…"];
+                        [[NSApp appDelegate] clickingIcon];
+                    }
                 }
             }
             
